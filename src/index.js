@@ -10,19 +10,75 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const {username} = request.headers;
+  const user = users.find((user)=> user.username === username);
+  
+  if(!user){
+    return response.status(404).json({error: "User not exists"});
+  }
+  request.user = user
+
+  return next();
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const {username} = request.headers;
+
+  const user = users.find((user)=> user.username === username);
+
+  if(!user.pro){
+    const todoCount = user.todos.length + 1;
+    if(todoCount>10){
+      return response.status(403).json({error:"User atingiu 10 todos"});
+    }
+  }
+  return next();
+
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+  const {username} = request.headers;
+  const {id} = request.params;
+
+  const UserAlreadExists = users.some((user) => user.username === username);
+  
+  
+  if(!UserAlreadExists){
+    return response.status(404).json({error: "Username not exists"})
+  }
+  if(!validate(id)){
+    return response.status(400).json({error: "Id is not UUID"})
+  }
+  const user = users.find((user) => user.username === username);
+  const idTodoAlreadExists = user.todos.some((todo) => todo.id === id);
+  if(!idTodoAlreadExists){
+    return response.status(404).json({error: "Todo not exists"})
+  }
+  
+  const todoIndex = user.todos.findIndex((todo) => todo.id === id);
+
+  request.user = user;
+  request.todo = user.todo[todoIndex];
+
+  return next();
+
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const {id} = request.params;
+
+  const usernameAlreadyExists = users.some((user) => user.id === id);
+
+  if (!usernameAlreadyExists) {
+    return response.status(404).json({ error: 'UserId not exists' });
+  }
+
+  const user = users.filter((user)=> user.id === id);
+
+  request.user = user;
+
+  return next();
+
 }
 
 app.post('/users', (request, response) => {
@@ -49,6 +105,8 @@ app.post('/users', (request, response) => {
 
 app.get('/users/:id', findUserById, (request, response) => {
   const { user } = request;
+
+
 
   return response.json(user);
 });
